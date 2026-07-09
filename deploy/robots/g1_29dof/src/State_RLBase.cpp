@@ -2,6 +2,8 @@
 #include "unitree_articulation.h"
 #include "isaaclab/envs/mdp/observations/observations.h"
 #include "isaaclab/envs/mdp/actions/joint_actions.h"
+#include <algorithm>
+#include <chrono>
 #include <unordered_map>
 
 namespace isaaclab
@@ -24,8 +26,18 @@ REGISTER_OBSERVATION(keyboard_velocity_commands)
     std::vector<float> cmd = {0.0f, 0.0f, 0.0f};
     if (key_commands.find(key) != key_commands.end())
     {
-        // TODO: smooth and limit the velocity commands
         cmd = key_commands[key];
+        cmd[0] = std::clamp(cmd[0], cfg["lin_vel_x"][0].as<float>(), cfg["lin_vel_x"][1].as<float>());
+        cmd[1] = std::clamp(cmd[1], cfg["lin_vel_y"][0].as<float>(), cfg["lin_vel_y"][1].as<float>());
+        cmd[2] = std::clamp(cmd[2], cfg["ang_vel_z"][0].as<float>(), cfg["ang_vel_z"][1].as<float>());
+
+        static auto last_log_time = std::chrono::steady_clock::now();
+        auto now = std::chrono::steady_clock::now();
+        if(std::chrono::duration<float>(now - last_log_time).count() > 0.5f)
+        {
+            spdlog::info("Keyboard command key={} cmd=[{:.2f}, {:.2f}, {:.2f}]", key, cmd[0], cmd[1], cmd[2]);
+            last_log_time = now;
+        }
     }
     return cmd;
 }

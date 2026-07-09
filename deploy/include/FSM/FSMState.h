@@ -14,10 +14,10 @@ public:
     {
         spdlog::info("Initializing State_{} ...", state_string);
 
-        auto transitions = param::config["FSM"][state_string]["transitions"];
-
-        if(transitions)
+        auto register_transitions = [&](YAML::Node transitions, auto make_check)
         {
+            if(!transitions) return;
+
             auto transition_map = transitions.as<std::map<std::string, std::string>>();
 
             for(auto it = transition_map.begin(); it != transition_map.end(); ++it)
@@ -37,12 +37,22 @@ public:
                 auto func = unitree::common::dsl::Compile(*ast);
                 registered_checks.emplace_back(
                     std::make_pair(
-                        [func]()->bool{ return func(FSMState::lowstate->joystick); },
+                        make_check(func),
                         fsm_id
                     )
                 );
             }
-        }
+        };
+
+        register_transitions(
+            param::config["FSM"][state_string]["transitions"],
+            [](auto func){ return [func]()->bool{ return func(FSMState::lowstate->joystick); }; }
+        );
+
+        register_transitions(
+            param::config["FSM"][state_string]["keyboard_transitions"],
+            [](auto func){ return [func]()->bool{ return FSMState::keyboard && func(*FSMState::keyboard); }; }
+        );
 
         // register for all states
         registered_checks.emplace_back(

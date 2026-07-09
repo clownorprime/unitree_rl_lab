@@ -7,16 +7,21 @@
 #include <unistd.h>
 #include <thread>
 
+#include <unitree/dds_wrapper/common/unitree_joystick.hpp>
+
 
 /**
  * @brief Maintain a keyboard reading thread.
  * And get the latest key value.
  */
-class Keyboard
+class Keyboard : public unitree::common::UnitreeJoystick
 {
 public:
   Keyboard()
   {
+    LT.smooth = 1.0f;
+    RT.smooth = 1.0f;
+
     tcgetattr( fileno( stdin ), &_oldSettings );
     _newSettings = _oldSettings;
     _oldSettings.c_lflag |= ( ICANON |  ECHO);
@@ -40,6 +45,8 @@ public:
 
   void update()
   {
+    update_joystick_keys_(_key);
+
     if(_key != _last_key)
     {
       on_pressed = _key != "";
@@ -161,4 +168,30 @@ public:
   
   termios _oldSettings, _newSettings;
   timeval _tv;
+
+  void update_joystick_keys_(const std::string& key)
+  {
+    back(key == " " ? 1 : 0);
+    start((key == "\n" || key == "\r") ? 1 : 0);
+    LS(0);
+    RS(0);
+    LB(key == "q" ? 1 : 0);
+    RB(key == "e" ? 1 : 0);
+    A(key == "a" ? 1 : 0);
+    B(key == "b" ? 1 : 0);
+    X(key == "x" ? 1 : 0);
+    Y(key == "y" ? 1 : 0);
+    up(key == "up" ? 1 : 0);
+    down(key == "down" ? 1 : 0);
+    left(key == "left" ? 1 : 0);
+    right(key == "right" ? 1 : 0);
+    F1(key == "1" ? 1 : 0);
+    F2(key == "2" ? 1 : 0);
+    LT(key == "z" ? 1.0f : 0.0f);
+    RT(key == "c" ? 1.0f : 0.0f);
+    lx(0.0f);
+    ly(0.0f);
+    rx(0.0f);
+    ry(0.0f);
+  }
 };

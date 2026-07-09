@@ -34,7 +34,17 @@ int main(int argc, char** argv)
     std::cout << "     G1-29dof Controller \n";
 
     // Unitree DDS Config
-    unitree::robot::ChannelFactory::Instance()->Init(0, vm["network"].as<std::string>());
+    auto network = vm["network"].as<std::string>();
+    if(network.empty())
+    {
+        // Simulation uses domain 1 on loopback by default.
+        unitree::robot::ChannelFactory::Instance()->Init(1, "lo");
+    }
+    else
+    {
+        // Real robot uses domain 0 on the specified network interface.
+        unitree::robot::ChannelFactory::Instance()->Init(0, network);
+    }
 
     init_fsm_state();
 
